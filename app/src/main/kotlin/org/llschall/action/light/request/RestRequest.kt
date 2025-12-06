@@ -26,6 +26,7 @@ class RestRequest(val repo: String, val token: String) {
             .GET() // Request the GitHub REST media type; this is the recommended header for the API
             .header("Accept", "application/vnd.github+json")
             .header("Authorization", "Bearer $token")
+            .header("X-GitHub-Api-Version", "2022-11-28")
 
         val request = reqBuilder.build()
 
