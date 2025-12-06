@@ -14,7 +14,8 @@ class RestRequest(val repo: String, val token: String) {
     fun send() {
 
         // Build the request URL (owner/repo must be in the form owner/repo)
-        val url = "https://api.github.com/repos/$repo/actions/runs?per_page=100"
+        // Only get the latest runs, sorted by created date in descending order
+        val url = "https://api.github.com/repos/$repo/actions/runs?per_page=10&sort=created&direction=desc"
 
         val client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
@@ -49,7 +50,11 @@ class RestRequest(val repo: String, val token: String) {
             val tree = ObjectMapper().readTree(body)
             for (node in tree.get("workflow_runs")) {
                 val status = node.get("status")
-                println("=> $status")
+                // get the workflow name
+                val name = node.get("name")
+                // get the workflow run conclusion
+                val conclusion = node.get("conclusion")
+                println("=> $name $status $conclusion")
             }
 
         } catch (e: IOException) {
