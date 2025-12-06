@@ -13,9 +13,13 @@ fun main() {
 
 class App {
 
+    val greeting = "Welcome to the action light app."
+
     val repo = "llschall/action-light"
 
     fun start() {
+        println(greeting)
+
         val token = ConfigLoader().getToken()
         val restRequest = RestRequest(repo, token)
         restRequest.send()
