@@ -3,6 +3,10 @@
  */
 package org.llschall.action.light
 
+import org.llschall.action.light.request.ConfigLoader
+import org.llschall.action.light.request.RestRequest
+import org.llschall.action.light.ribbon.Ribbon
+
 fun main() {
     App().start()
 }
@@ -15,5 +19,8 @@ class App {
         val token = ConfigLoader().getToken()
         val restRequest = RestRequest(repo, token)
         restRequest.send()
+
+        val ribbon = Ribbon()
+        ribbon.start()
     }
 }

@@ -1,4 +1,4 @@
-package org.llschall.action.light
+package org.llschall.action.light.request
 
 class ConfigLoader {
 

@@ -1,4 +1,4 @@
-package org.llschall.action.light
+package org.llschall.action.light.request
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.io.IOException
