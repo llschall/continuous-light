@@ -1,5 +1,6 @@
 package org.llschall.action.light
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import java.io.IOException
 import java.net.URI
 import java.net.http.HttpClient
@@ -29,7 +30,7 @@ class RestRequest(val repo: String, val token: String) {
         val request = reqBuilder.build()
 
         try {
-            val response = client.send<String?>(request, HttpResponse.BodyHandlers.ofString())
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
             val statusCode = response.statusCode()
 
             if (statusCode != 200) {
@@ -38,19 +39,18 @@ class RestRequest(val repo: String, val token: String) {
                 exitProcess(3)
             }
 
-            val body = response.body()!!
-
-            // Very small, dependency-free approach: look for occurrences of status values in the JSON
-            val inProgress = countOccurrences(body, "\"status\":\"in_progress\"")
-            val queued = countOccurrences(body, "\"status\":\"queued\"")
-
-            System.out.printf("Repository %s - in_progress: %d, queued: %d%n", repo, inProgress, queued)
-
-            if (inProgress + queued > 0) {
-                println("There are running or queued GitHub Actions runs.")
-            } else {
-                println("No running or queued GitHub Actions runs found.")
+            val body = response.body()
+            if (body == null) {
+                System.err.println("GitHub API returned empty body")
+                exitProcess(5)
             }
+
+            val tree = ObjectMapper().readTree(body)
+            for (node in tree.get("workflow_runs")) {
+                val status = node.get("status")
+                println("=> $status")
+            }
+
         } catch (e: IOException) {
             // Print a helpful message for the user and propagate an exit code
             System.err.println("Failed to query GitHub API: " + e.message)
@@ -62,16 +62,4 @@ class RestRequest(val repo: String, val token: String) {
             exitProcess(4)
         }
     }
-
-    // Utility: counts non-overlapping occurrences of a substring in a string
-    private fun countOccurrences(text: String, sub: String): Int {
-        var idx = 0
-        var count = 0
-        while ((text.indexOf(sub, idx).also { idx = it }) != -1) {
-            count++
-            idx += sub.length
-        }
-        return count
-    }
-
 }

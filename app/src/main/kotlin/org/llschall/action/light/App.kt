@@ -9,7 +9,7 @@ fun main() {
 
 class App {
 
-    val repo = "llschall/rgb-ribbon"
+    val repo = "llschall/action-light"
 
     fun start() {
         val token = ConfigLoader().getToken()
