@@ -3,13 +3,17 @@
  */
 package org.llschall.action.light
 
-class App {
-    val greeting: String
-        get() {
-            return "Hello World!"
-        }
+fun main() {
+    App().start()
 }
 
-fun main() {
-    println(App().greeting)
+class App {
+
+    val repo = "llschall/rgb-ribbon"
+
+    fun start() {
+        val token = ConfigLoader().getToken()
+        val restRequest = RestRequest(repo, token)
+        restRequest.send()
+    }
 }
