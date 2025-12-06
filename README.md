@@ -1,2 +1,2 @@
 # action-light
-A small application that monitors Github Actions and updates a led strip with the Actions status.
+A small application that monitors GitHub actions and updates a LED strip with the Actions status.
