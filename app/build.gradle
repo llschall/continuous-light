@@ -37,7 +37,7 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = 'org.example.AppKt'
+    mainClass = 'org.llschall.action.light.AppKt'
 }
 
 tasks.named('test') {
