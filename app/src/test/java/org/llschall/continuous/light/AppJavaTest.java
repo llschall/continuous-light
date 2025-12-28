@@ -1,7 +1,7 @@
 /*
  * Java Test Class
  */
-package org.llschall.action.light;
+package org.llschall.continuous.light;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

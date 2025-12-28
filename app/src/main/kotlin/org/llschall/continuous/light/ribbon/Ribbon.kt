@@ -1,4 +1,4 @@
-package org.llschall.action.light.ribbon
+package org.llschall.continuous.light.ribbon
 
 import org.llschall.rgbribbon.RgbRibbon
 import java.awt.Color
