@@ -20,6 +20,16 @@ class Ribbon {
     }
 
     fun update(count: Int) {
+        if (count == 0) {
+            ribbon.setBrightness(2)
+            for (i in 0 until 9) {
+                ribbon.getLed(i).setColor(Color.green)
+            }
+            ribbon.publish()
+            return
+        }
+
+        ribbon.setBrightness(20)
         for (i in 0 until count) {
             ribbon.getLed(i).setColor(Color.yellow)
 

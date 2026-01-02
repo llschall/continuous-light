@@ -45,6 +45,7 @@ class App {
             val totalPRCount = restRequest.send(repos)
             println("Total pull requests found: $totalPRCount")
             ribbon.update(totalPRCount)
+            Thread.sleep(5_000)
         }
 
     }
