@@ -31,14 +31,21 @@ class App {
             return
         }
 
-        Thread {
-            println("Found ${repos.size} repositories. Checking pull requests...")
-            restRequest.send(repos)
-        }.start()
+        println("Found ${repos.size} repositories:")
 
-        Thread {
-            val ribbon = Ribbon()
-            ribbon.start()
-        }.start()
+        // print all repositories
+        for (repo in repos) {
+            println("# Repository: $repo")
+        }
+
+        val ribbon = Ribbon()
+        ribbon.start()
+
+        for (i in 0..999_999) {
+            val totalPRCount = restRequest.send(repos)
+            println("Total pull requests found: $totalPRCount")
+            ribbon.update(totalPRCount)
+        }
+
     }
 }

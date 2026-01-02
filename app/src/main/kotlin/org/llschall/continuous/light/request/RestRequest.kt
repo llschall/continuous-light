@@ -65,17 +65,19 @@ class RestRequest(val token: String) {
         return repos
     }
 
-    fun send(repos: List<String>) {
+    fun send(repos: List<String>): Int {
         val client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build()
 
+        var totalPRCount = 0
         for (repo in repos) {
-            checkPullRequests(repo, client)
+            totalPRCount += checkPullRequests(repo, client)
         }
+        return totalPRCount
     }
 
-    private fun checkPullRequests(repo: String, client: HttpClient) {
+    private fun checkPullRequests(repo: String, client: HttpClient): Int {
         // Build the request URL to fetch open pull requests
         val url = "https://api.github.com/repos/$repo/pulls?state=open&sort=created&direction=desc"
 
@@ -96,17 +98,19 @@ class RestRequest(val token: String) {
             if (statusCode != 200) {
                 System.err.println("GitHub API returned non-OK status for $repo: $statusCode")
                 System.err.println(response.body())
-                return
+                return 0
             }
 
             val body = response.body()
             if (body == null) {
                 System.err.println("GitHub API returned empty body for $repo")
-                return
+                return 0
             }
 
             val tree = ObjectMapper().readTree(body)
+            var prCount = 0
             for (prNode in tree) {
+                prCount++
                 val prNumber = prNode.get("number").asInt()
                 val prTitle = prNode.get("title").asText()
                 val headSha = prNode.get("head").get("sha").asText()
@@ -114,12 +118,15 @@ class RestRequest(val token: String) {
                 // Check status checks for this PR
                 checkStatusChecks(repo, headSha, prNumber, prTitle, client)
             }
+            return prCount
 
         } catch (e: IOException) {
             // Print a helpful message for the user and propagate an exit code
             System.err.println("Failed to query GitHub API for $repo: " + e.message)
+            return 0
         } catch (e: InterruptedException) {
             System.err.println("Failed to query GitHub API for $repo: " + e.message)
+            return 0
         }
     }
 
