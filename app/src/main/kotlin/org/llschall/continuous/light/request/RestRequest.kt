@@ -24,7 +24,12 @@ class RestRequest(val token: String) {
 
         while (true) {
             val url = "https://api.github.com/users/$username/repos?per_page=100&page=$page&sort=updated&direction=desc"
-            val response = sendRequest(url) ?: break
+            val response = try {
+                sendRequest(url)
+            } catch (_: Exception) {
+                break
+            }
+
 
             val tree = mapper.readTree(response)
             if (tree !is ArrayNode || tree.isEmpty) {
@@ -46,7 +51,7 @@ class RestRequest(val token: String) {
 
     private fun checkPullRequests(repo: String): Int {
         val url = "https://api.github.com/repos/$repo/pulls?state=open&sort=created&direction=desc"
-        val response = sendRequest(url) ?: return 0
+        val response = sendRequest(url)
 
         val tree = mapper.readTree(response) as? ArrayNode ?: return 0
 
@@ -63,8 +68,10 @@ class RestRequest(val token: String) {
 
     private fun checkStatusChecks(repo: String, headSha: String, prNumber: Int, prTitle: String) {
         val url = "https://api.github.com/repos/$repo/commits/$headSha/check-runs"
-        val response = sendRequest(url) ?: run {
-            System.err.println("Failed to fetch check runs for PR #$prNumber")
+        val response = try {
+            sendRequest(url)
+        } catch (e: Exception) {
+            System.err.println("Failed to fetch check runs for PR #$prNumber: ${e.message}")
             return
         }
 
@@ -91,7 +98,7 @@ class RestRequest(val token: String) {
         }
     }
 
-    private fun sendRequest(url: String): String? {
+    private fun sendRequest(url: String): String {
         return try {
             val request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -107,19 +114,19 @@ class RestRequest(val token: String) {
 
             when {
                 response.statusCode() != 200 -> {
-                    System.err.println("GitHub API returned non-OK status: ${response.statusCode()}")
-                    null
+                    throw RuntimeException("GitHub API returned non-OK status: ${response.statusCode()}")
                 }
 
-                body.isNullOrEmpty() || body == "[]" -> null
+                body.isNullOrEmpty() || body == "[]" -> {
+                    throw RuntimeException("GitHub API returned empty response")
+                }
+
                 else -> body
             }
         } catch (e: IOException) {
-            System.err.println("Failed to query GitHub API: ${e.message}")
-            null
+            throw RuntimeException("Failed to query GitHub API: ${e.message}", e)
         } catch (e: InterruptedException) {
-            System.err.println("Failed to query GitHub API: ${e.message}")
-            null
+            throw RuntimeException("Failed to query GitHub API: ${e.message}", e)
         }
     }
 }
