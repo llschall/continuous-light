@@ -13,18 +13,39 @@ fun main() {
 
 class App {
 
-    val greeting = "Welcome to the action light app."
+    val greeting = "Welcome to the continuous light app."
 
-    val repo = "llschall/continuous-light"
+    val user = "llschall"
 
     fun start() {
         println(greeting)
 
         val token = ConfigLoader().getToken()
-        val restRequest = RestRequest(repo, token)
-        restRequest.send()
+        val restRequest = RestRequest(token)
+
+        println("Fetching all repositories for user: $user")
+        val repos = restRequest.getAllUserRepos(user)
+
+        if (repos.isEmpty()) {
+            System.err.println("No repositories found for user $user")
+            return
+        }
+
+        println("Found ${repos.size} repositories:")
+
+        // print all repositories
+        for (repo in repos) {
+            println("# Repository: $repo")
+        }
 
         val ribbon = Ribbon()
         ribbon.start()
+
+        for (i in 0..999_999) {
+            val totalPRCount = restRequest.send(repos)
+            println("Total pull requests found: $totalPRCount")
+            ribbon.update(totalPRCount)
+        }
+
     }
 }
