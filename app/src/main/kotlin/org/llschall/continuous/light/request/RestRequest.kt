@@ -7,18 +7,77 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
-import kotlin.system.exitProcess
 
-class RestRequest(val repo: String, val token: String) {
+class RestRequest(val token: String) {
 
-    fun send() {
-
-        // Build the request URL to fetch open pull requests
-        val url = "https://api.github.com/repos/$repo/pulls?state=open&sort=created&direction=desc"
-
+    fun getAllUserRepos(username: String): List<String> {
         val client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .build()
+
+        val repos = mutableListOf<String>()
+        var page = 1
+
+        while (true) {
+            val url = "https://api.github.com/users/$username/repos?per_page=100&page=$page&sort=updated&direction=desc"
+
+            val request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(20))
+                .GET()
+                .header("Accept", "application/vnd.github+json")
+                .header("Authorization", "Bearer $token")
+                .header("X-GitHub-Api-Version", "2022-11-28")
+                .build()
+
+            try {
+                val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+                if (response.statusCode() != 200) {
+                    System.err.println("Failed to fetch repos for $username: ${response.statusCode()}")
+                    break
+                }
+
+                val body = response.body()
+                if (body == null || body.isEmpty() || body == "[]") {
+                    break
+                }
+
+                val tree = ObjectMapper().readTree(body)
+                if (tree.isEmpty) {
+                    break
+                }
+
+                for (repoNode in tree) {
+                    val fullName = repoNode.get("full_name").asText()
+                    repos.add(fullName)
+                }
+
+                page++
+            } catch (e: IOException) {
+                System.err.println("Failed to fetch repos for $username: ${e.message}")
+                break
+            } catch (e: InterruptedException) {
+                System.err.println("Failed to fetch repos for $username: ${e.message}")
+                break
+            }
+        }
+
+        return repos
+    }
+
+    fun send(repos: List<String>) {
+        val client = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .build()
+
+        for (repo in repos) {
+            checkPullRequests(repo, client)
+        }
+    }
+
+    private fun checkPullRequests(repo: String, client: HttpClient) {
+        // Build the request URL to fetch open pull requests
+        val url = "https://api.github.com/repos/$repo/pulls?state=open&sort=created&direction=desc"
 
         val reqBuilder = HttpRequest.newBuilder()
             .uri(URI.create(url))
@@ -35,15 +94,15 @@ class RestRequest(val repo: String, val token: String) {
             val statusCode = response.statusCode()
 
             if (statusCode != 200) {
-                System.err.println("GitHub API returned non-OK status: $statusCode")
+                System.err.println("GitHub API returned non-OK status for $repo: $statusCode")
                 System.err.println(response.body())
-                exitProcess(3)
+                return
             }
 
             val body = response.body()
             if (body == null) {
-                System.err.println("GitHub API returned empty body")
-                exitProcess(5)
+                System.err.println("GitHub API returned empty body for $repo")
+                return
             }
 
             val tree = ObjectMapper().readTree(body)
@@ -53,22 +112,18 @@ class RestRequest(val repo: String, val token: String) {
                 val headSha = prNode.get("head").get("sha").asText()
 
                 // Check status checks for this PR
-                checkStatusChecks(headSha, prNumber, prTitle, client)
+                checkStatusChecks(repo, headSha, prNumber, prTitle, client)
             }
 
         } catch (e: IOException) {
             // Print a helpful message for the user and propagate an exit code
-            System.err.println("Failed to query GitHub API: " + e.message)
-            Thread.currentThread().interrupt()
-            exitProcess(4)
+            System.err.println("Failed to query GitHub API for $repo: " + e.message)
         } catch (e: InterruptedException) {
-            System.err.println("Failed to query GitHub API: " + e.message)
-            Thread.currentThread().interrupt()
-            exitProcess(4)
+            System.err.println("Failed to query GitHub API for $repo: " + e.message)
         }
     }
 
-    private fun checkStatusChecks(headSha: String, prNumber: Int, prTitle: String, client: HttpClient) {
+    private fun checkStatusChecks(repo: String, headSha: String, prNumber: Int, prTitle: String, client: HttpClient) {
         // Use the Check Runs API to get all check runs for this commit
         val url = "https://api.github.com/repos/$repo/commits/$headSha/check-runs"
 
@@ -101,7 +156,7 @@ class RestRequest(val repo: String, val token: String) {
                 val conclusion = checkRun.get("conclusion").asText()
                 val name = checkRun.get("name").asText()
 
-                println("PR #$prNumber ($prTitle) - $name: $status / $conclusion")
+                println("PR #$prNumber ($repo) ($prTitle) - $name: $status / $conclusion")
 
                 // Check run is successful only if conclusion is "success"
                 if (conclusion != "success") {
@@ -110,11 +165,11 @@ class RestRequest(val repo: String, val token: String) {
             }
 
             if (!hasStatusChecks) {
-                System.err.println("PR #$prNumber: No check runs found - cannot merge")
+                System.err.println("PR #$prNumber ($repo): No check runs found - cannot merge")
             } else if (!allSuccessful) {
-                System.err.println("PR #$prNumber cannot be merged: not all check runs are successful")
+                System.err.println("PR #$prNumber ($repo) cannot be merged: not all check runs are successful")
             } else {
-                println("PR #$prNumber is ready to merge - all checks passed")
+                println("PR #$prNumber ($repo) is ready to merge - all checks passed")
             }
 
         } catch (e: IOException) {

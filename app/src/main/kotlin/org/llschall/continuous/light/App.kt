@@ -15,14 +15,23 @@ class App {
 
     val greeting = "Welcome to the action light app."
 
-    val repo = "llschall/continuous-light"
+    val user = "llschall"
 
     fun start() {
         println(greeting)
 
         val token = ConfigLoader().getToken()
-        val restRequest = RestRequest(repo, token)
-        restRequest.send()
+        val restRequest = RestRequest(token)
+
+        println("Fetching all repositories for user: $user")
+        val repos = restRequest.getAllUserRepos(user)
+
+        if (repos.isEmpty()) {
+            System.err.println("No repositories found for user $user")
+        } else {
+            println("Found ${repos.size} repositories. Checking pull requests...")
+            restRequest.send(repos)
+        }
 
         val ribbon = Ribbon()
         ribbon.start()
