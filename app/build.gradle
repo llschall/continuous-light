@@ -23,7 +23,7 @@ dependencies {
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.1")
     // https://mvnrepository.com/artifact/io.github.llschall/rgb-ribbon
-    implementation("io.github.llschall:rgb-ribbon:0.0.4")
+    implementation("io.github.llschall:rgb-ribbon:0.0.5")
 
     // Use JUnit Jupiter for testing.
     testImplementation libs.junit.jupiter
