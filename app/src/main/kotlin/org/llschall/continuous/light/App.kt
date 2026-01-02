@@ -13,7 +13,7 @@ fun main() {
 
 class App {
 
-    val greeting = "Welcome to the action light app."
+    val greeting = "Welcome to the continuous light app."
 
     val user = "llschall"
 
@@ -28,12 +28,17 @@ class App {
 
         if (repos.isEmpty()) {
             System.err.println("No repositories found for user $user")
-        } else {
-            println("Found ${repos.size} repositories. Checking pull requests...")
-            restRequest.send(repos)
+            return
         }
 
-        val ribbon = Ribbon()
-        ribbon.start()
+        Thread {
+            println("Found ${repos.size} repositories. Checking pull requests...")
+            restRequest.send(repos)
+        }.start()
+
+        Thread {
+            val ribbon = Ribbon()
+            ribbon.start()
+        }.start()
     }
 }
