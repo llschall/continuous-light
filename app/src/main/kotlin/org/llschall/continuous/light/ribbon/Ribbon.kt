@@ -1,8 +1,8 @@
 package org.llschall.continuous.light.ribbon
 
+import org.llschall.continuous.light.request.Status
 import org.llschall.rgbribbon.RgbRibbon
 import java.awt.Color
-import java.util.concurrent.atomic.AtomicInteger
 
 /// https://github.com/llschall/rgb-ribbon/blob/main/ino/rgb-ribbon/rgb-ribbon.ino
 class Ribbon {
@@ -14,28 +14,30 @@ class Ribbon {
         ribbon.start()
         ribbon.setBrightness(3)
         for (i in 0 until 9) {
-            ribbon.getLed(i).setColor(Color.green)
+            ribbon.getLed(i).setColor(Color.blue)
         }
         ribbon.publish()
     }
 
-    fun update(count: Int) {
-        if (count == 0) {
+    fun update(list: List<Status>) {
+        if (list.isEmpty()) {
             ribbon.setBrightness(2)
             for (i in 0 until 9) {
-                ribbon.getLed(i).setColor(Color.green)
+                ribbon.getLed(i).setColor(Color.blue)
             }
             ribbon.publish()
             return
         }
 
         ribbon.setBrightness(20)
+        val count = list.size
         for (i in 0 until count) {
-            ribbon.getLed(i).setColor(Color.yellow)
-
+            list.get(i).let { status ->
+                ribbon.getLed(i).setColor(status.color)
+            }
         }
         for (i in count until 9) {
-            ribbon.getLed(i).setColor(Color.blue)
+            ribbon.getLed(i).setColor(Color.black)
         }
         ribbon.publish()
     }

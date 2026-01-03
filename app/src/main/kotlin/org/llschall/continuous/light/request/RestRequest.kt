@@ -36,59 +36,60 @@ class RestRequest(val token: String) {
 
             page++
         }
-
         return repos
     }
 
-    fun send(repos: List<String>): Int {
-        return repos.sumOf { checkPullRequests(it) }
+    fun send(repos: List<String>): List<Status> {
+        val list = mutableListOf<Status>()
+        for (repo in repos) {
+            list.addAll(checkPullRequests(repo))
+        }
+        return list
     }
 
-    private fun checkPullRequests(repo: String): Int {
+    private fun checkPullRequests(repo: String): List<Status> {
         val url = "https://api.github.com/repos/$repo/pulls?state=open&sort=created&direction=desc"
-        val response = sendRequest(url) ?: return 0
+        val response = sendRequest(url) ?: return emptyList()
 
-        val tree = mapper.readTree(response) as? ArrayNode ?: return 0
+        val tree = mapper.readTree(response) as? ArrayNode ?: return emptyList()
+
+        val list = mutableListOf<Status>()
 
         tree.forEachIndexed { _, prNode ->
             val prNumber = prNode.get("number").asInt()
             val prTitle = prNode.get("title").asText()
             val headSha = prNode.get("head").get("sha").asText()
 
-            checkStatusChecks(repo, headSha, prNumber, prTitle)
+            list.addAll(checkStatusChecks(repo, headSha, prNumber, prTitle))
         }
-
-        return tree.size()
+        return list
     }
 
-    private fun checkStatusChecks(repo: String, headSha: String, prNumber: Int, prTitle: String) {
+    private fun checkStatusChecks(repo: String, headSha: String, prNumber: Int, prTitle: String): List<Status> {
         val url = "https://api.github.com/repos/$repo/commits/$headSha/check-runs"
         val response = sendRequest(url) ?: run {
             System.err.println("Failed to fetch check runs for PR #$prNumber")
-            return
+            return emptyList()
         }
 
         val jsonResponse = mapper.readTree(response)
-        val checkRuns = jsonResponse.get("check_runs") as? ArrayNode ?: return
+        val checkRuns = jsonResponse.get("check_runs") as? ArrayNode ?: return emptyList()
 
         if (checkRuns.isEmpty) {
             System.err.println("PR #$prNumber ($repo): No check runs found - cannot merge")
-            return
+            return emptyList()
         }
 
-        val allSuccessful = checkRuns.all { it.get("conclusion").asText() == "success" }
+        val list = mutableListOf<Status>()
 
         checkRuns.forEach { checkRun ->
             val status = checkRun.get("status").asText()
             val conclusion = checkRun.get("conclusion").asText()
             val name = checkRun.get("name").asText()
-            println("PR #$prNumber ($repo) ($prTitle) - $name: $status / $conclusion")
+            println("PR #$prNumber ($repo) ($prTitle) - $name: [$status]  $conclusion")
+            list.add(Status.UNKNOWN.fromString(status))
         }
-
-        when {
-            !allSuccessful -> System.err.println("PR #$prNumber ($repo) cannot be merged: not all check runs are successful")
-            else -> println("PR #$prNumber ($repo) is ready to merge - all checks passed")
-        }
+        return list
     }
 
     private fun sendRequest(url: String): String? {
