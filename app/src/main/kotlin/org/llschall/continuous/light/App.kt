@@ -65,12 +65,5 @@ class App {
         val trayIcon = TrayIcon(image, "Continuous Light App")
         trayIcon.setImageAutoSize(true)
         tray.add(trayIcon)
-
-        trayIcon.displayMessage(
-            "Application started",
-            "The app is now running in the background.",
-            TrayIcon.MessageType.INFO
-        )
-
     }
 }
