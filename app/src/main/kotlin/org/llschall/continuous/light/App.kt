@@ -6,6 +6,10 @@ package org.llschall.continuous.light
 import org.llschall.continuous.light.request.ConfigLoader
 import org.llschall.continuous.light.request.RestRequest
 import org.llschall.continuous.light.ribbon.Ribbon
+import java.awt.SystemTray
+import java.awt.TrayIcon
+import java.io.File
+import javax.imageio.ImageIO
 
 fun main() {
     App().start()
@@ -19,6 +23,8 @@ class App {
 
     fun start() {
         println(greeting)
+
+        displayTrayIcon()
 
         val token = ConfigLoader().getToken()
         val restRequest = RestRequest(token)
@@ -47,6 +53,17 @@ class App {
             ribbon.update(totalPRCount)
             Thread.sleep(5_000)
         }
+    }
 
+    fun displayTrayIcon() {
+        if (!SystemTray.isSupported()) {
+            System.err.println("System tray not supported");
+            return
+        }
+        val image = ImageIO.read(File("tray.png"))
+        val tray = SystemTray.getSystemTray()
+        val trayIcon = TrayIcon(image, "Continuous Light App")
+        trayIcon.setImageAutoSize(true)
+        tray.add(trayIcon)
     }
 }
