@@ -60,10 +60,17 @@ class App {
             System.err.println("System tray not supported");
             return
         }
-        val image = ImageIO.read(File("tray.png"))
+        val image = ImageIO.read(File("app/src/main/resources/tray.png"))
         val tray = SystemTray.getSystemTray()
         val trayIcon = TrayIcon(image, "Continuous Light App")
         trayIcon.setImageAutoSize(true)
         tray.add(trayIcon)
+
+        trayIcon.displayMessage(
+            "Application started",
+            "The app is now running in the background.",
+            TrayIcon.MessageType.INFO
+        )
+
     }
 }
