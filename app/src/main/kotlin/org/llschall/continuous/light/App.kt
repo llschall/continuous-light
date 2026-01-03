@@ -48,9 +48,9 @@ class App {
         ribbon.start()
 
         for (i in 0..999_999) {
-            val totalPRCount = restRequest.send(repos)
-            println("Total pull requests found: $totalPRCount")
-            ribbon.update(totalPRCount)
+            val list = restRequest.send(repos)
+            println("Total pull requests found: $list.size")
+            ribbon.update(list)
             Thread.sleep(5_000)
         }
     }
