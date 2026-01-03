@@ -49,7 +49,7 @@ class App {
 
         for (i in 0..999_999) {
             val list = restRequest.send(repos)
-            println("Total pull requests found: $list.size")
+            println("Found: ${list.size}")
             ribbon.update(list)
             Thread.sleep(5_000)
         }
